@@ -1,0 +1,13 @@
+name: Test macOS Runner
+
+on:
+  workflow_dispatch: # manual trigger
+
+jobs:
+  macos-test:
+    runs-on: macos-latest
+    steps:
+      - name: Print system info
+        run: |
+          sw_vers
+          system_profiler SPHardwareDataType
