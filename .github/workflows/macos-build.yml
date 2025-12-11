@@ -33,7 +33,7 @@ jobs:
         run: |
           cd private_code
           xcodebuild \
-            -scheme "Tack-tek" \
+            -scheme "tack-tek-staging" \
             -sdk iphonesimulator \
             -destination 'platform=iOS Simulator,name=iPhone 15' \
             build \
