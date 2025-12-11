@@ -1,0 +1,42 @@
+name: iOS Build
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-latest
+
+    steps:
+      - name: Set up Git credentials
+        run: |
+          git config --global credential.helper store
+          printf "https://token:${PRIVATE_REPO_TOKEN}@github.com\n" > ~/.git-credentials
+        env:
+          PRIVATE_REPO_TOKEN: ${{ secrets.PRIVATE_REPO_TOKEN }}
+
+      - name: Clone private repo
+        run: |
+          git clone https://github.com/tacktek/TackTek.git private_code --depth=1
+
+      - name: Set Xcode version
+        run: |
+          sudo xcode-select -s /Applications/Xcode.app
+          xcodebuild -version
+
+      - name: Clean build folder
+        run: |
+          cd private_code
+          rm -rf build DerivedData || true
+
+      - name: Build iOS app
+        run: |
+          cd private_code
+          xcodebuild \
+            -scheme "Tack-tek" \
+            -sdk iphonesimulator \
+            -destination 'platform=iOS Simulator,name=iPhone 15' \
+            build \
+            | xcpretty
+        env:
+          NSUnbufferedIO: YES
