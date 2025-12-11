@@ -1,0 +1,23 @@
+name: Clone Private Repo Test
+
+on:
+  workflow_dispatch:
+
+jobs:
+  clone-private:
+    runs-on: macos-latest
+
+    steps:
+      - name: Set up Git credentials
+        run: |
+          git config --global credential.helper store
+          printf "https://token:${PRIVATE_REPO_TOKEN}@github.com\n" > ~/.git-credentials
+        env:
+          PRIVATE_REPO_TOKEN: ${{ secrets.PRIVATE_REPO_TOKEN }}
+
+      - name: Clone the private repo
+        run: |
+          git clone git clone git@github.com:tacktek/TackTek.git private_code --depth=1
+
+      - name: Show top-level structure
+        run: ls -1 private_code
