@@ -17,7 +17,7 @@ jobs:
 
       - name: Clone the private repo
         run: |
-          git clone git@github.com:tacktek/TackTek.git private_code --depth=1
+          git clone https://github.com/tacktek/TackTek.git private_code --depth=1
 
       - name: Show top-level structure
         run: ls -1 private_code
