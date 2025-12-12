@@ -1,3 +1,28 @@
+name: iOS CI
+
 on:
   repository_dispatch:
     types: [feature_push]
+
+jobs:
+  ios-tests:
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout private repo
+        uses: actions/checkout@v4
+        with:
+          repository: tacktek/${{ github.event.client_payload.repo }}
+          ref: ${{ github.event.client_payload.branch }}
+          token: ${{ secrets.PRIVATE_REPO_TOKEN }}
+
+      - name: Select Xcode
+        run: sudo xcode-select -s /Applications/Xcode.app
+
+      - name: Run unit tests
+        run: |
+          xcodebuild test \
+            -project Tack-tek.xcodeproj \
+            -scheme tack-tek-staging \
+            -destination 'platform=iOS Simulator,name=iPhone 15' \
+            | xcbeautify
