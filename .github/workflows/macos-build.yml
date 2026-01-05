@@ -1,4 +1,4 @@
-name: iOS Build
+name: iOS Build DEPRECATED
 
 on:
   workflow_dispatch:
