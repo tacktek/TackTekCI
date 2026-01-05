@@ -1,0 +1,82 @@
+name: iOS Build
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-latest
+
+    env:
+      APP_STORE_CONNECT_API_KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
+      APP_STORE_CONNECT_API_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_API_ISSUER_ID }}
+      APP_STORE_CONNECT_API_KEY_BASE64: ${{ secrets.APP_STORE_CONNECT_API_KEY_BASE64 }}
+      MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
+
+    steps:
+      - name: Set up Git credentials
+        run: |
+          git config --global credential.helper store
+          printf "https://token:${PRIVATE_REPO_TOKEN}@github.com\n" > ~/.git-credentials
+        env:
+          PRIVATE_REPO_TOKEN: ${{ secrets.PRIVATE_REPO_TOKEN }}
+
+      - name: Clone private repo
+        run: |
+          git clone --branch jan-5-fast-lane-integration --single-branch --depth=1 https://github.com/tacktek/TackTek.git private_code
+
+      - name: Set Xcode version
+        run: |
+          sudo xcode-select -s /Applications/Xcode.app
+          xcodebuild -version
+
+      - name: Clean build folder
+        working-directory: private_code
+        run: |
+          rm -rf build DerivedData || true
+
+      - name: Install SSH Key for Match
+        run: |
+          mkdir -p ~/.ssh
+          echo "$MATCH_SSH_PRIVATE_KEY" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan github.com >> ~/.ssh/known_hosts
+        env:
+          MATCH_SSH_PRIVATE_KEY: ${{ secrets.MATCH_SSH_PRIVATE_KEY }}
+
+      - name: Create and Unlock Keychain
+        run: |
+          security create-keychain -p "" build.keychain
+          security set-keychain-settings build.keychain
+          security unlock-keychain -p "" build.keychain
+          security list-keychains -s build.keychain
+          security default-keychain -s build.keychain
+
+      - name: Unlock login keychain
+        run: |
+          security unlock-keychain -p "" /Users/runner/Library/Keychains/login.keychain-db
+          security list-keychains -s build.keychain /Users/runner/Library/Keychains/login.keychain-db
+
+      - name: Decode API Key
+        working-directory: private_code
+        run: |
+          echo "$APP_STORE_CONNECT_API_KEY_BASE64" | base64 --decode > fastlane/AuthKey_${APP_STORE_CONNECT_API_KEY_ID}.p8
+
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.2"
+
+      - name: Install Fastlane
+        working-directory: private_code
+        run: bundle install
+
+      - name: Build & Upload to TestFlight
+        working-directory: private_code
+        run: bundle exec fastlane beta --verbose
+
+      - name: Dump gym log
+        if: failure()
+        working-directory: private_code
+        run: |
+          cat /Users/runner/Library/Logs/gym/Tack-tek-tack-tek-staging.log || true

@@ -24,5 +24,6 @@ jobs:
           xcodebuild test \
             -project Tack-tek.xcodeproj \
             -scheme tack-tek-staging \
-            -destination 'platform=iOS Simulator,name=iPhone 16' \
+            -testPlan TackTek \
+            -destination 'platform=iOS Simulator,name=iPhone 16,OS=18.3' \
             | xcbeautify
