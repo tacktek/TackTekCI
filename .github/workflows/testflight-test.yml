@@ -23,7 +23,8 @@ jobs:
 
       - name: Clone private repo
         run: |
-          git clone --branch jan-5-fast-lane-integration --single-branch --depth=1 https://github.com/tacktek/TackTek.git private_code
+          git clone --branch jan-5-fast-lane-integration --single-branch --depth=1 \
+            https://github.com/tacktek/TackTek.git private_code
 
       - name: Set Xcode version
         run: |
@@ -49,13 +50,18 @@ jobs:
           security create-keychain -p "" build.keychain
           security set-keychain-settings -lut 21600 build.keychain
           security unlock-keychain -p "" build.keychain
-          security list-keychains -s build.keychain
+
+          security list-keychains -s \
+            /Users/runner/Library/Keychains/build.keychain-db \
+            /Users/runner/Library/Keychains/login.keychain-db
+
           security default-keychain -s build.keychain
 
       - name: Decode API Key
         working-directory: private_code
         run: |
-          echo "$APP_STORE_CONNECT_API_KEY_BASE64" | base64 --decode > fastlane/AuthKey_${APP_STORE_CONNECT_API_KEY_ID}.p8
+          echo "$APP_STORE_CONNECT_API_KEY_BASE64" | base64 --decode \
+            > fastlane/AuthKey_${APP_STORE_CONNECT_API_KEY_ID}.p8
 
       - name: Setup Ruby
         uses: ruby/setup-ruby@v1
@@ -70,18 +76,10 @@ jobs:
         working-directory: private_code
         run: bundle exec fastlane beta --verbose
 
-      - name: Allow codesign access
-        run: |
-          security set-key-partition-list \
-            -S apple-tool:,apple:,codesign: \
-            -s \
-            -k "" build.keychain
-
       - name: Verify signing identities
-        run: security find-identity -p codesigning build.keychain
+        run: security find-identity -v -p codesigning build.keychain
 
       - name: Dump gym log
         if: failure()
-        working-directory: private_code
         run: |
           cat /Users/runner/Library/Logs/gym/Tack-tek-tack-tek-staging.log || true
