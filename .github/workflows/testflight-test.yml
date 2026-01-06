@@ -72,9 +72,6 @@ jobs:
         working-directory: private_code
         run: bundle install
 
-      - name: Select Xcode 26
-        run: sudo xcode-select -s /Applications/Xcode_26.app
-
       - name: Build & Upload to TestFlight
         working-directory: private_code
         run: bundle exec fastlane beta --verbose
