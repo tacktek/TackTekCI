@@ -74,7 +74,7 @@ jobs:
 
       - name: Build & Upload to TestFlight
         working-directory: private_code
-        run: bundle exec fastlane beta --verbose
+        run: SKIP_UPLOAD=true bundle exec fastlane test_flight
 
       - name: Verify signing identities
         run: security find-identity -v -p codesigning build.keychain

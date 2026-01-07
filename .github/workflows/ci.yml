@@ -1,29 +1,35 @@
-name: iOS CI
+name: iOS CI - PR Staging
 
 on:
   repository_dispatch:
-    types: [feature_push]
+    types: [pr-staging]
 
 jobs:
-  ios-tests:
-    runs-on: macos-latest
+  ios-ci:
+    runs-on: macos-26
 
     steps:
-      - name: Checkout private repo
+      - name: Show dispatch payload
+        run: |
+          echo "Source repo: ${{ github.event.client_payload.source_repo }}"
+          echo "Ref: ${{ github.event.client_payload.ref }}"
+          echo "SHA: ${{ github.event.client_payload.sha }}"
+
+      - name: Checkout iOS repo
         uses: actions/checkout@v4
         with:
-          repository: tacktek/${{ github.event.client_payload.repo }}
-          ref: ${{ github.event.client_payload.branch }}
+          repository: tacktek/TackTek
+          ref: ${{ github.event.client_payload.sha }}
           token: ${{ secrets.PRIVATE_REPO_TOKEN }}
+          fetch-depth: 0
 
-      - name: Select Xcode
-        run: sudo xcode-select -s /Applications/Xcode.app
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.2"
 
-      - name: Run unit tests
-        run: |
-          xcodebuild test \
-            -project Tack-tek.xcodeproj \
-            -scheme tack-tek-staging \
-            -testPlan TackTek \
-            -destination 'platform=iOS Simulator,name=iPhone 16,OS=18.3' \
-            | xcbeautify
+      - name: Install dependencies
+        run: bundle install
+
+      - name: Run Fastlane mock build
+        run: bundle exec fastlane ci
