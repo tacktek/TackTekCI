@@ -31,5 +31,10 @@ jobs:
       - name: Install dependencies
         run: bundle install
 
+      - name: Boot simulator
+        run: |
+          xcrun simctl list devices
+          xcrun simctl bootstatus "iPhone 15" -b
+
       - name: Run Fastlane mock build
         run: bundle exec fastlane ci
