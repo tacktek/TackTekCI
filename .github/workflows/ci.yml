@@ -5,62 +5,48 @@ on:
     types: [pr-staging]
 
 jobs:
-  ios-ci:
-    strategy:
-      matrix:
-        include:
-          - ios: "18.7.2"
-            runner: macos-latest
-          - ios: "26.2"
-            runner: macos-26
+  runs-on: macos-26
 
-    runs-on: ${{ matrix.runner }}
+  steps:
+    - name: Show dispatch payload
+      run: |
+        echo "Source repo: ${{ github.event.client_payload.source_repo }}"
+        echo "Ref: ${{ github.event.client_payload.ref }}"
+        echo "SHA: ${{ github.event.client_payload.sha }}"
 
-    env:
-      IOS_VERSION: ${{ matrix.ios }}
+    - name: Checkout iOS repo
+      uses: actions/checkout@v4
+      with:
+        repository: tacktek/TackTek
+        ref: ${{ github.event.client_payload.sha }}
+        token: ${{ secrets.PRIVATE_REPO_TOKEN }}
+        fetch-depth: 0
 
-    steps:
-      - name: Show dispatch payload
-        run: |
-          echo "Source repo: ${{ github.event.client_payload.source_repo }}"
-          echo "Ref: ${{ github.event.client_payload.ref }}"
-          echo "SHA: ${{ github.event.client_payload.sha }}"
-          echo "iOS version: $IOS_VERSION"
-          echo "Runner: ${{ matrix.runner }}"
+    - name: Set up Ruby
+      uses: ruby/setup-ruby@v1
+      with:
+        ruby-version: "3.2"
 
-      - name: Checkout iOS repo
-        uses: actions/checkout@v4
-        with:
-          repository: tacktek/TackTek
-          ref: ${{ github.event.client_payload.sha }}
-          token: ${{ secrets.PRIVATE_REPO_TOKEN }}
-          fetch-depth: 0
+    - name: Install dependencies
+      run: bundle install
 
-      - name: Set up Ruby
-        uses: ruby/setup-ruby@v1
-        with:
-          ruby-version: "3.2"
+    - name: Boot simulator
+      run: |
+        echo "Booting iPhone 17 Pro on iOS 26.2"
 
-      - name: Install dependencies
-        run: bundle install
+        DEVICE_ID=$(xcrun simctl list devices available | \
+          grep -E "iPhone 17 Pro \(26.2\)" | \
+          head -n 1 | \
+          awk -F '[()]' '{print $2}')
 
-      - name: Boot simulator
-        run: |
-          echo "Booting iPhone 15 on iOS $IOS_VERSION"
+        if [ -z "$DEVICE_ID" ]; then
+          echo "Simulator for iOS 26.2 not found"
+          xcrun simctl list devices
+          exit 1
+        fi
 
-          DEVICE_ID=$(xcrun simctl list devices available | \
-            grep -E "iPhone 15 \\($IOS_VERSION\\)" | \
-            head -n 1 | \
-            awk -F '[()]' '{print $2}')
+        xcrun simctl boot "$DEVICE_ID"
+        xcrun simctl bootstatus "$DEVICE_ID" -b
 
-          if [ -z "$DEVICE_ID" ]; then
-            echo "Simulator for iOS $IOS_VERSION not found"
-            xcrun simctl list devices
-            exit 1
-          fi
-
-          xcrun simctl boot "$DEVICE_ID"
-          xcrun simctl bootstatus "$DEVICE_ID" -b
-
-      - name: Run Fastlane mock build
-        run: bundle exec fastlane ci
+    - name: Run Fastlane mock build
+      run: bundle exec fastlane ci
