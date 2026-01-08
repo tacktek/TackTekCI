@@ -31,23 +31,5 @@ jobs:
       - name: Install dependencies
         run: bundle install
 
-      - name: Boot simulator
-        run: |
-          echo "Booting iPhone 17 Pro on iOS 26.2"
-
-          DEVICE_ID=$(xcrun simctl list devices available | \
-            grep -E "iPhone 17 Pro \\(26.2\\)" | \
-            head -n 1 | \
-            awk -F '[()]' '{print $2}')
-
-          if [ -z "$DEVICE_ID" ]; then
-            echo "Simulator for iOS 26.2 not found"
-            xcrun simctl list devices
-            exit 1
-          fi
-
-          xcrun simctl boot "$DEVICE_ID"
-          xcrun simctl bootstatus "$DEVICE_ID" -b
-
       - name: Run Fastlane mock build
         run: bundle exec fastlane ci
