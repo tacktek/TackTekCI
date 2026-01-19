@@ -31,5 +31,5 @@ jobs:
       - name: Install dependencies
         run: bundle install
 
-      - name: Run Fastlane mock build
+      - name: Run CI Fastlane
         run: bundle exec fastlane ci
