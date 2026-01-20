@@ -6,7 +6,7 @@ on:
 
 jobs:
   ios-ci:
-    runs-on: macos-26
+    runs-on: macos-26-xlarge
 
     steps:
       - name: Show dispatch payload
