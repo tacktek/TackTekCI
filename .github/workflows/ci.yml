@@ -6,7 +6,7 @@ on:
 
 jobs:
   ios-ci:
-    runs-on: macos-26-xlarge
+    runs-on: macos-26
 
     steps:
       - name: Show dispatch payload
@@ -31,7 +31,7 @@ jobs:
       - name: Install dependencies
         run: bundle install
 
-      - name: Preboot simulator (hard timeout, Xcode 26.0.1 compatible)
+      - name: Preboot simulator (no timeout)
         shell: bash
         run: |
           set -euo pipefail
@@ -41,25 +41,11 @@ jobs:
           # Shut down if possible (ignore "already shutdown")
           xcrun simctl shutdown "$UDID" >/dev/null 2>&1 || true
 
-          # Start boot
+          # Start boot (this may hang; you can cancel the job manually if it does)
           xcrun simctl boot "$UDID" >/dev/null 2>&1 || true
 
-          # Wait for boot to complete, but CAP it at 120s.
-          if ! timeout 120 xcrun simctl bootstatus "$UDID" -b; then
-            echo "ERROR: Simulator failed to boot within 120s"
-
-            echo "Attempting one CoreSimulator reset + retry..."
-            killall Simulator >/dev/null 2>&1 || true
-            killall -9 com.apple.CoreSimulator.CoreSimulatorService >/dev/null 2>&1 || true
-
-            xcrun simctl shutdown "$UDID" >/dev/null 2>&1 || true
-            xcrun simctl boot "$UDID" >/dev/null 2>&1 || true
-
-            if ! timeout 120 xcrun simctl bootstatus "$UDID" -b; then
-              echo "ERROR: Simulator still did not boot after retry"
-              exit 1
-            fi
-          fi
+          # Block until boot completes
+          xcrun simctl bootstatus "$UDID" -b
 
           echo "Simulator booted OK"
 
