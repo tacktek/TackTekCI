@@ -31,5 +31,25 @@ jobs:
       - name: Install dependencies
         run: bundle install
 
+      - name: Preboot simulator with timeout (no erase)
+        shell: bash
+        run: |
+          set -euo pipefail
+          UDID="75A02ADD-C903-4C9E-B4B6-F2A548242E6A"
+
+          xcrun simctl shutdown "$UDID" || true
+          xcrun simctl boot "$UDID" || true
+
+          # Wait up to 120s for a real boot
+          if ! xcrun simctl bootstatus "$UDID" -b -t 120; then
+            echo "Simulator boot timed out; restarting CoreSimulatorService and retrying once..."
+            killall Simulator || true
+            killall -9 com.apple.CoreSimulator.CoreSimulatorService || true
+
+            xcrun simctl shutdown "$UDID" || true
+            xcrun simctl boot "$UDID" || true
+            xcrun simctl bootstatus "$UDID" -b -t 120
+          fi
+
       - name: Run CI Fastlane
         run: bundle exec fastlane ci
