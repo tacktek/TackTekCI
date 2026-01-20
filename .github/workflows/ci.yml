@@ -31,25 +31,37 @@ jobs:
       - name: Install dependencies
         run: bundle install
 
-      - name: Preboot simulator with timeout (no erase)
+      - name: Preboot simulator (hard timeout, Xcode 26.0.1 compatible)
         shell: bash
         run: |
           set -euo pipefail
+
           UDID="75A02ADD-C903-4C9E-B4B6-F2A548242E6A"
 
-          xcrun simctl shutdown "$UDID" || true
-          xcrun simctl boot "$UDID" || true
+          # Shut down if possible (ignore "already shutdown")
+          xcrun simctl shutdown "$UDID" >/dev/null 2>&1 || true
 
-          # Wait up to 120s for a real boot
-          if ! xcrun simctl bootstatus "$UDID" -b -t 120; then
-            echo "Simulator boot timed out; restarting CoreSimulatorService and retrying once..."
-            killall Simulator || true
-            killall -9 com.apple.CoreSimulator.CoreSimulatorService || true
+          # Start boot
+          xcrun simctl boot "$UDID" >/dev/null 2>&1 || true
 
-            xcrun simctl shutdown "$UDID" || true
-            xcrun simctl boot "$UDID" || true
-            xcrun simctl bootstatus "$UDID" -b -t 120
+          # Wait for boot to complete, but CAP it at 120s.
+          if ! timeout 120 xcrun simctl bootstatus "$UDID" -b; then
+            echo "ERROR: Simulator failed to boot within 120s"
+
+            echo "Attempting one CoreSimulator reset + retry..."
+            killall Simulator >/dev/null 2>&1 || true
+            killall -9 com.apple.CoreSimulator.CoreSimulatorService >/dev/null 2>&1 || true
+
+            xcrun simctl shutdown "$UDID" >/dev/null 2>&1 || true
+            xcrun simctl boot "$UDID" >/dev/null 2>&1 || true
+
+            if ! timeout 120 xcrun simctl bootstatus "$UDID" -b; then
+              echo "ERROR: Simulator still did not boot after retry"
+              exit 1
+            fi
           fi
+
+          echo "Simulator booted OK"
 
       - name: Run CI Fastlane
         run: bundle exec fastlane ci
