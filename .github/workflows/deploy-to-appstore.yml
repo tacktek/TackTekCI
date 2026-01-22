@@ -1,7 +1,8 @@
-name: iOS Build
+name: iOS Build App Store
 
 on:
-  workflow_dispatch:
+  repository_dispatch:
+    types: [appstore]
 
 jobs:
   build:
@@ -23,7 +24,7 @@ jobs:
 
       - name: Clone private repo
         run: |
-          git clone --branch jan-5-fast-lane-integration --single-branch --depth=1 \
+          git clone --branch production --single-branch --depth=1 \
             https://github.com/tacktek/TackTek.git private_code
 
       - name: Set Xcode version
@@ -72,9 +73,9 @@ jobs:
         working-directory: private_code
         run: bundle install
 
-      - name: Build & Upload to TestFlight
+      - name: Build & Upload to App Store
         working-directory: private_code
-        run: SKIP_UPLOAD=true bundle exec fastlane test_flight
+        run: bundle exec fastlane app_store
 
       - name: Verify signing identities
         run: security find-identity -v -p codesigning build.keychain
@@ -82,4 +83,4 @@ jobs:
       - name: Dump gym log
         if: failure()
         run: |
-          cat /Users/runner/Library/Logs/gym/Tack-tek-tack-tek-staging.log || true
+          cat /Users/runner/Library/Logs/gym/Tack-tek-tack-tek-production.log || true
