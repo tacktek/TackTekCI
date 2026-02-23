@@ -41,7 +41,7 @@ jobs:
             | jq -r '.devices | to_entries[]
               | select(.key | contains("iOS"))
               | .value[]
-              | select(.name | test("iPhone 16$"))
+              | select(.name | test("iPhone 16e|iPhone 17$"))
               | .udid' | head -1)
 
           if [ -z "$UDID" ]; then
