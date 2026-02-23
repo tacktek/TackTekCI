@@ -31,23 +31,40 @@ jobs:
       - name: Install dependencies
         run: bundle install
 
-      - name: Preboot simulator (no timeout)
+      - name: Preboot simulator
         shell: bash
         run: |
           set -euo pipefail
 
-          UDID="75A02ADD-C903-4C9E-B4B6-F2A548242E6A"
+          # Find an available iPhone simulator dynamically
+          UDID=$(xcrun simctl list devices available -j \
+            | jq -r '.devices | to_entries[]
+              | select(.key | contains("iOS"))
+              | .value[]
+              | select(.name | test("iPhone 16$"))
+              | .udid' | head -1)
+
+          if [ -z "$UDID" ]; then
+            echo "❌ No matching simulator found. Available devices:"
+            xcrun simctl list devices available
+            exit 1
+          fi
+
+          echo "Found simulator: $UDID"
 
           # Shut down if possible (ignore "already shutdown")
           xcrun simctl shutdown "$UDID" >/dev/null 2>&1 || true
 
-          # Start boot (this may hang; you can cancel the job manually if it does)
+          # Boot and wait
           xcrun simctl boot "$UDID" >/dev/null 2>&1 || true
-
-          # Block until boot completes
           xcrun simctl bootstatus "$UDID" -b
 
-          echo "Simulator booted OK"
+          echo "✅ Simulator booted OK"
+
+          # Export for use in Fastlane
+          echo "SIM_UDID=$UDID" >> "$GITHUB_ENV"
 
       - name: Run CI Fastlane
         run: bundle exec fastlane ci
+        env:
+          SIM_UDID: ${{ env.SIM_UDID }}
