@@ -1,3 +1,12 @@
+# deploy-to-testflight.yml
+# Builds the iOS app from the release branch and uploads to Apple TestFlight.
+# Triggered via repository_dispatch from the private TackTek repo.
+# Handles code signing via Match, keychain setup, and App Store Connect API auth.
+#
+# Dispatch event: testflight
+# Branch: release
+# Fastlane lane: test_flight
+
 name: iOS Build Test Flight
 
 on:

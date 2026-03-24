@@ -1,3 +1,12 @@
+# deploy-to-appstore.yml
+# Builds the iOS app from the production branch and uploads to the Apple App Store.
+# Triggered via repository_dispatch from the private TackTek repo.
+# Handles code signing via Match, keychain setup, and App Store Connect API auth.
+#
+# Dispatch event: appstore
+# Branch: production
+# Fastlane lane: app_store
+
 name: iOS Build App Store
 
 on:

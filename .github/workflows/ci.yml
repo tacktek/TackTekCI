@@ -1,3 +1,11 @@
+# ci.yml
+# Runs CI checks for pull requests targeting the staging branch.
+# Triggered via repository_dispatch from the private TackTek repo.
+# Checks out the private repo at a specific commit SHA and runs the fastlane ci lane.
+#
+# Dispatch event: pr-staging
+# Payload: source_repo, ref, sha
+
 name: iOS CI - PR Staging
 
 on:
